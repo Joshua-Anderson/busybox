@@ -673,15 +673,16 @@ static void new_init_action(uint8_t action_type, const char *command, const char
  * _is_ defined, but /etc/inittab is missing, this
  * results in the same set of default behaviors.
  */
-static void parse_inittab(void)
+static void parse_inittab_internal(const char *path, int default_entries)
 {
 #if ENABLE_FEATURE_USE_INITTAB
 	char *token[4];
-	parser_t *parser = config_open2("/etc/inittab", fopen_for_read);
+	parser_t *parser = config_open2(path, fopen_for_read);
 
 	if (parser == NULL)
 #endif
 	{
+		if (default_entries) {
 		/* No inittab file - set up some default behavior */
 		/* Sysinit */
 		new_init_action(SYSINIT, INIT_SCRIPT, "");
@@ -700,6 +701,7 @@ static void parse_inittab(void)
 		/* Restart init when a QUIT is received */
 		new_init_action(RESTART, "init", "");
 		return;
+	}
 	}
 
 #if ENABLE_FEATURE_USE_INITTAB
@@ -734,6 +736,12 @@ static void parse_inittab(void)
 	}
 	config_close(parser);
 #endif
+}
+
+static void parse_inittab(void)
+{
+   parse_inittab_internal("/etc/inittab", 1);
+   parse_inittab_internal("/usr/local/etc/inittab", 0);
 }
 
 static void pause_and_low_level_reboot(unsigned magic) NORETURN;
